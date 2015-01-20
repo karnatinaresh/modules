@@ -1,0 +1,64 @@
+2.5.1 -  Zack Smith
+  * README updates
+2.5.0 -  Zack Smith & Sean Keery
+  * Puppet Enterprise 3.7 compatibility
+  * Fixed bugs #108,#110,#110,#111
+  * Support for /module end point in webhook to run r10k module deploy foo
+2.4.4 - Eli Young & Igor Galić
+  * prevent potential leakage Resource defaults for ini
+  *     Handle branch names containing slashes
+2.4.3 - Zack Smith
+  * Documentation Updates
+2.4.1 - Zack Smith
+  * Documentation Updates
+2.4.0 - Zack Smith
+  * Bump r10k version
+2.3.4 - Eli Young
+  * Webhook fixes for reboots + refreshes
+2.3.3 - Zach Leslie + misterdom
+  * Fix for #97
+2.3.2 - Zach Leslie + misterdom
+  * Fix for #96
+2.3.1 - Ben Ford
+  * Fix for #87
+2.3.0 - Zack Smith
+ * Fold in #78, #75 and #73
+2.2.7 - Zack Smith
+ * Bugfix for mcollective during puppet apply and webhook as non mco
+2.2.7 - Zack Smith
+ * forge cut
+2.2.6 - Zack Smith
+ * Fix scoping issues with new logfile
+2.2.4 - Adam Crews
+ * Fix for invalid webhook typo syntax and updates for using stash
+2.2.3 - Zack Smith
+ * Functional prefix support for webhook
+2.2.3 - Zack Smith
+ * Remove PID file creation from webhook
+2.1.2 - Garrett Honeycutt & Zack Smith
+ * Fix quoting issue created by #24 with booleans with #54
+ * Intial commit of functionally tested github authenticated webhook
+2.1.1 - Zack Smith
+ * Add SSL and auth support to webhook
+2.1.0 - Zack Smith
+ * Intial branch support for mco
+2.0.0 - Tim Hartmann
+ * Fixes for r10k.yaml #24 but caused #54 so use 2.1.2+
+1.0.2 - James Sweeny
+  * Fix issue with module working on PE
+1.0.1 - Justin Lambert & welterde
+  * Minor fix for basedir and rspec-puppet updates
+0.0.9 - Zack Smith <zack@puppetlabs.com>
+  * Final params list for version 1.0.0 set & Bugfixes
+0.0.8 - Theo Chatzimichos <tampakrap>
+  * Add gentoo support , refactor install class
+0.0.5 - Zack Smith <zack@puppetlabs.vom>
+  * Lint and Syntax updates + Forge Release
+0.0.4 - Zack Smith <zack@puppetlabs.com>
+  * RC1 of new sources code
+0.0.3 - Zack Smith <zack@puppetlabs.com>
+  * Allow for multiple sources
+0.0.2 - Zack Smith <zack@puppetlabs.com>
+  * Restrict installed version of r10k to
+0.0.1 - Zack Smith <zack@puppetlabs.com> - 0.0.1
+  * Initial Release

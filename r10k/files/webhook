@@ -1,0 +1,209 @@
+#!/opt/puppet/bin/ruby
+# This mini-webserver is meant to be run as the peadmin user
+# so that it can call mcollective from a puppetmaster
+# Authors:
+# Ben Ford
+# Adam Crews
+# Zack Smith
+# Jeff Malnick
+
+require 'rubygems'
+require 'sinatra/base'
+require 'webrick'
+require 'webrick/https'
+require 'openssl'
+require 'mcollective'
+require 'resolv'
+require 'json'
+require 'yaml'
+require 'cgi'
+include MCollective::RPC
+
+
+WEBHOOK_CONFIG = '/etc/webhook.yaml'
+PIDFILE        = '/var/run/webhook/webhook.pid'
+APP_ROOT       = '/var/run/webhook'
+
+if (File.exists?(WEBHOOK_CONFIG))
+  $config = YAML.load_file(WEBHOOK_CONFIG)
+else
+  raise "Configuration file: #{WEBHOOK_CONFIG} does not exist"
+end
+
+ENV['HOME'] = '/var/lib/peadmin'
+ENV['PATH'] = '/sbin:/usr/sbin:/bin:/usr/bin:/opt/puppet/bin'
+
+$logger = WEBrick::Log::new($config['access_logfile'], WEBrick::Log::DEBUG)
+
+# PE 3.7 check for renamed certificate path
+public_key_path  = File.join("#{$config['certpath']}", "#{$config['certname']}-cert.pem")
+
+private_key_path = File.join("#{$config['certpath']}", "#{$config['certname']}-private.pem")
+
+opts = {
+        :Port               => $config['port'],
+        :Logger             => $logger,
+        :ServerType         => WEBrick::Daemon,
+        :SSLEnable          => $config['enable_ssl'],
+        :SSLVerifyClient    => OpenSSL::SSL::VERIFY_NONE,
+        :SSLCertificate     => OpenSSL::X509::Certificate.new(  File.open(File.join("#{public_key_path}")).read),
+        :SSLPrivateKey      => OpenSSL::PKey::RSA.new(          File.open(File.join("#{private_key_path}")).read),
+        :SSLCertName        => [ [ "CN",WEBrick::Utils::getservername ] ]
+}
+
+class Server  < Sinatra::Base
+
+  set :static, false
+
+  #File.open('/var/run/webhook/webhook.pid', 'w') {|f| f.write $$ }
+
+  get '/' do
+    raise Sinatra::NotFound
+  end
+
+  # Simulate a github post:
+  # curl -d '{ "repository": { "name": "puppetlabs-stdlib" } }' -H "Accept: application/json" 'https://puppet:487156B2-7E67-4E1C-B447-001603C6B8B2@localhost:8088/module' -k -q
+  post '/module' do
+    protected! if $config['protected']
+    $logger.info("authenticated: #{$config['user']}")
+    request.body.rewind  # in case someone already read it
+    decoded = request.body.read
+
+    data = JSON.parse(decoded, :quirks_mode => true)
+
+    module_name = ( data['repository']['name'] ).sub(/^.*-/, '')
+
+    deploy_module(module_name)
+  end
+
+  # Simulate a github post:
+  # curl -d '{ "ref": "refs/heads/production" }' -H "Accept: application/json" 'https://puppet:puppet@localhost:8088/payload' -k -q
+  #
+  # If using stash look at the stash_mco.rb script included here.
+  # It will filter the stash post and make it look like a github post.
+  #
+  # Simulate a Gitorious post:
+  # curl -X POST -d '%7b%22ref%22%3a%22master%22%7d' 'http://puppet:puppet@localhost:8088/payload' -q
+  # Yes, Gitorious does not support https...
+
+  post '/payload' do
+    protected! if $config['protected']
+    $logger.info("authenticated: #{$config['user']}")
+    request.body.rewind  # in case someone already read it
+
+    # Check if content type is x-www-form-urlencoded
+    if request.content_type.to_s.downcase.eql?('application/x-www-form-urlencoded')
+      decoded = CGI::unescape(request.body.read).gsub(/^payload\=/,'')
+    else
+      decoded = request.body.read
+    end
+    data = JSON.parse(decoded, :quirks_mode => true)
+
+    # github sends a 'ref', stash sends an array in 'refChanges'
+    branch = ( data['ref'] || data['refChanges'][0]['refId'] ).sub('refs/heads/', '')
+
+    # If prefix is enabled in our config file run the command to determine the prefix
+    if $config['prefix']
+      prefix = run_prefix_command(data.to_json)
+      if prefix.empty?
+        deploy(branch)
+      else
+        deploy("#{prefix}_#{branch}")
+      end
+    else
+      deploy(branch)
+    end
+  end
+
+  not_found do
+    halt 404, "You shall not pass! (page not found)\n"
+  end
+
+  helpers do
+
+    def deploy_module(module_name)
+      begin
+        if $config['use_mcollective']
+          command = "/opt/puppet/bin/mco r10k deploy_module #{module_name} >> #{$config['mco_logfile']} 2>&1 &"
+        else
+          # If you don't use mcollective then this hook needs to be running as r10k's user i.e. root
+          command = "/opt/puppet/bin/r10k deploy module #{module_name} >> #{$config['mco_logfile']} 2>&1 &"
+        end
+        message = "triggered: #{command}"
+        Process.detach(fork{ exec "#{command}"})
+        $logger.info("message: #{message} module_name: #{module_name}")
+        {:status => :success, :message => message.to_s }.to_json
+      rescue => e
+        $logger.error("message: #{e.message} trace: #{e.backtrace}")
+        {:status => :fail, :message => e.message, :trace => e.backtrace}.to_json
+      end
+    end
+
+    def deploy(branch)
+      begin
+        if $config['use_mco_ruby']
+          result = mco(branch).first
+          if result.results[:statuscode] == 0
+            message = result.results[:statusmsg]
+          else
+            raise result.results[:statusmsg]
+          end
+        else
+          if $config['use_mcollective']
+              command = "/opt/puppet/bin/mco r10k deploy #{branch} >> #{$config['mco_logfile']} 2>&1 &"
+          else
+            # If you don't use mcollective then this hook needs to be running as r10k's user i.e. root
+            command = "/opt/puppet/bin/r10k deploy environment #{branch} >> #{$config['mco_logfile']} 2>&1 &"
+          end
+          message = "triggered: #{command}"
+          Process.detach(fork{ exec "#{command}"})
+        end
+        $logger.info("message: #{message} branch: #{branch}")
+        {:status => :success, :message => message.to_s }.to_json
+     rescue => e
+        $logger.error("message: #{e.message} trace: #{e.backtrace}")
+        {:status => :fail, :message => e.message, :trace => e.backtrace}.to_json
+      end
+    end  #end deploy()
+
+   def mco(branch)
+     options =  MCollective::Util.default_options
+     options[:config] = $config['client_cfg']
+     client = rpcclient('r10k', :exit_on_failure => false,:options => options)
+     client.discovery_timeout = $config['discovery_timeout']
+     client.timeout           = $config['client_timeout']
+     result = client.send('deploy',{:environment => branch})
+   end # end deploy()
+
+
+    def protected!
+      unless authorized?
+        response['WWW-Authenticate'] = %(Basic realm="Restricted Area")
+        throw(:halt, [401, "Not authorized\n"])
+      end
+    end  #end protected!
+
+    def authorized?
+      @auth ||=  Rack::Auth::Basic::Request.new(request.env)
+      @auth.provided? && @auth.basic? && @auth.credentials &&
+      @auth.credentials == [$config['user'],$config['pass']]
+    end  #end authorized?
+
+    def run_prefix_command(payload)
+      IO.popen($config['prefix_command'], mode='r+') do |io|
+          io.write payload.to_s
+          io.close_write
+          begin
+            result = io.readlines.first.chomp
+          rescue
+            result = ''
+          end
+      end
+    end #end run_prefix_command
+
+  end  #end helpers
+end
+
+Rack::Handler::WEBrick.run(Server, opts) do |server|
+  [:INT, :TERM].each { |sig| trap(sig) { server.stop } }
+end
