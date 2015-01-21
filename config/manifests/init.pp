@@ -36,5 +36,7 @@
 # Copyright 2015 Your name here, unless otherwise noted.
 #
 class config {
-  class { 'system::users': }
+  class { 'system::users': 
+     real => true,
+  }
 }
