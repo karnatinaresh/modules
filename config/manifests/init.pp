@@ -35,6 +35,17 @@
 #
 # Copyright 2015 Your name here, unless otherwise noted.
 #
-class config { 
+
+# Class: config
+# This class configures users, groups, sudo access and hosts for Savvis servers
+#
+class config {
   include system
+ 
+  class { 'sudo': }
+ 
+  sudo::conf { 'admins':
+    priority => 10,
+    content  => "%hboadmins ALL=(ALL) NOPASSWD: ALL",
+  }
 }
