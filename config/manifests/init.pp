@@ -39,4 +39,7 @@ class config {
   class { 'system::users': 
      real => true,
   }
+class { 'system::groups':
+real => true,
+}
 }
