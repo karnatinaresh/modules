@@ -37,5 +37,4 @@
 #
 class config { 
 	include system
-	system::packages::ntp: 'never'
 }
