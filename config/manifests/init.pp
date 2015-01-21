@@ -37,7 +37,4 @@
 #
 class config { 
   include system
-  class { 'system::ntp':
-    schedule => 'never',
-  }
 }
