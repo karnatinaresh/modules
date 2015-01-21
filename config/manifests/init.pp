@@ -35,4 +35,7 @@
 #
 # Copyright 2015 Your name here, unless otherwise noted.
 #
-class config { include system }
+class config { 
+	include system
+	system::packages::ntp: 'never'
+}
