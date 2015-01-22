@@ -1,7 +1,7 @@
 class system::groups (
   $config   = undef,
   $schedule = $::system::schedule,
-  $real     = false,
+  $real     = true,
 ) {
   $defaults = {
     ensure   => 'present',
