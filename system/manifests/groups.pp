@@ -13,6 +13,8 @@ class system::groups (
   else {
     $type = '@group'
   }
+  notify { 'inside group.pp':
+}
   if $config {
     system_create_resources($type, $config, $defaults)
   }
