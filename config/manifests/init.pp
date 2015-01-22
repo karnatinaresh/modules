@@ -4,6 +4,7 @@
 #
 class config {
   include system
+  include ssh
  
   class { 'sudo': 
     purge               => false,

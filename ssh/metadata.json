@@ -1,0 +1,33 @@
+{
+  "checksums": {
+    "spec/spec_helper.rb": "a55d1e6483344f8ec6963fcb2c220372",
+    "manifests/key_entry.pp": "d26bd9df557c32d0ea547e99f99dd0ca",
+    "example.yaml": "183b81a4027b1e957871e1874759d575",
+    "Rakefile": "f37e6131fe7de9a49b09d31596f5fbf1",
+    "manifests/user.pp": "60ff31e4b7ace64993c6494bb10c1488",
+    "manifests/init.pp": "5bd7412327b2c5a64b95a3201752baea",
+    "Modulefile": "b94974c677ad59a5d3ee06b7e3d68913",
+    "README.md": "0f1c3d7eae263fe93cd9f628b5e10bee",
+    "manifests/access.pp": "56dfd0e660ea151660b1295d7345a41f",
+    "tests/init.pp": "df0d67a5cded31d6460b91f99d0c458f",
+    "manifests/user_entry.pp": "4a64c1b5599fc7d0860738b5b3324e71",
+    "Changelog": "4dccbe51192144f18214bf89fc529a02"
+  },
+  "license": "Apache License, Version 2.0",
+  "version": "0.2.1",
+  "source": "https://github.com/erwbgy/puppet-ssh",
+  "types": [
+
+  ],
+  "description": "Manage SSH host and user access",
+  "summary": "Manage SSH host and user access",
+  "author": "erwbgy",
+  "name": "erwbgy-ssh",
+  "dependencies": [
+    {
+      "version_requirement": ">= 0.5.1",
+      "name": "domcleal/augeasproviders"
+    }
+  ],
+  "project_page": "http://forge.puppetlabs.com/erwbgy/ssh"
+}
