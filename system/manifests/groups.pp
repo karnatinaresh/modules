@@ -1,7 +1,7 @@
 class system::groups (
   $config   = undef,
   $schedule = $::system::schedule,
-  $real     = true,
+  $real     = false,
 ) {
   $defaults = {
     ensure   => 'present',
@@ -12,9 +12,6 @@ class system::groups (
   }
   else {
     $type = '@group'
-  }
-  notify { 'inside group.pp':
-}
   if $config {
     system_create_resources($type, $config, $defaults)
   }
