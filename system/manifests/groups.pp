@@ -12,6 +12,7 @@ class system::groups (
   }
   else {
     $type = '@group'
+  }
   if $config {
     system_create_resources($type, $config, $defaults)
   }
